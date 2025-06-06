@@ -125,7 +125,13 @@ def markdown_to_html_node(markdown: str):
 					raise Exception("Heading is not detected")
 
 				heading_level, heading_text = match_heading.groups()
-				heading_node = ParentNode(f"h{len(heading_level)}", [LeafNode(None, heading_text)])
+				heading_node = ParentNode(
+					f"h{len(heading_level)}",
+					map(
+						lambda inner_node: text_node_to_html_node(inner_node),
+						text_to_textnodes(heading_text)
+					)
+				)
 				node_children.append(heading_node)
 
 

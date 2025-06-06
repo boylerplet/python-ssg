@@ -42,14 +42,19 @@ class LeafNode(HTMLNode):
 
 		# Case with no value
 		if self.value is None:
-			raise ValueError("All leaf nodes must have a value")
+			if self.tag != "img" and self.tag != "a":
+				raise ValueError(f"All leaf nodes must have a value at <{self.tag}>{self.value}</{self.tag}>")
 
 		# Case with text node
 		if self.tag is None:
 			html_string = f"{self.value}"
 		else:
-		# Normal case
-			html_string = f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
+			if self.tag == "img":
+				# Image
+				html_string = f"<{self.tag}{self.props_to_html()}></{self.tag}>"
+			else:
+				# Normal case
+				html_string = f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
 
 		return html_string
 
@@ -62,10 +67,12 @@ class ParentNode(HTMLNode):
 
 		# Case with no tag
 		if self.tag is None:
+			print(self)
 			raise ValueError("All parent nodes must have a tag")
 
 		# Case with no childrent
 		if self.children is None:
+			print(self)
 			raise ValueError("All parent nodes must have a child")
 
 		# Normal case

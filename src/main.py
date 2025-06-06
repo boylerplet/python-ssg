@@ -2,9 +2,6 @@ import os
 import shutil
 import re
 from util import markdown_to_html_node
-# Delete all contents of public
-# Copy all files and subdirectories nested files from static to public
-# log path of each file copied
 
 class Logger():
 	def __init__(self, enabled = True):
@@ -65,8 +62,19 @@ def extract_title(markdown: str):
 	return matches[0].lstrip('# ')
 
 def generate_page(from_path: str, template_path: str, dest_path: str):
-	logger.INFO(f"Generaing page from {from_path} to {dest_path} using {template_path}")
+	logger.INFO(f"Generaing page from '{from_path}' to '{dest_path}' using '{template_path}'")
 
+	# Check destination exists
+	dirs = '/'.join(dest_path.split('/')[:-1])
+	if os.path.exists(dirs):
+		logger.INFO(f"Dir Exists '{dirs}'")
+	else:
+		logger.INFO(f"Dir does not exist '{dirs}'")
+		logger.INFO(f"Creating dir '{dirs}'...")
+		os.makedirs(dirs)
+		logger.INFO(f"Dir Created!!! '{dirs}'...")
+
+	# Create file
 	md_text = ""
 	template_text = ""
 	with open(from_path) as md:
@@ -76,6 +84,7 @@ def generate_page(from_path: str, template_path: str, dest_path: str):
 		template_text = template.read()
 
 	html_node = markdown_to_html_node(md_text)
+	# print(html_node)
 	html_text = html_node.to_html()
 
 	page_title = extract_title(md_text)
@@ -83,15 +92,27 @@ def generate_page(from_path: str, template_path: str, dest_path: str):
 	full_html = template_text.replace('{{ Title }}', page_title).replace('{{ Content }}', html_text)
 
 	logger.INFO("Writing to file...")
-	with open(dest_path) as html_file:
+	with open(dest_path, "w") as html_file:
 		html_file.write(full_html)
 
-	logger.SUCCESS("Completed!!!")
+	logger.SUCCESS(f"Completed generating HTML file at '{dest_path}' !!!")
+
+def generate_pages_recursive(content_dir_path: str, template_path: str, dest_dir_path: str):
+	content_dir_items = os.listdir(content_dir_path)
+
+	for file in content_dir_items:
+		# logger.DEBUG(f"Processing path '{content_dir_path}/{file}'")
+		if os.path.isfile(os.path.join(content_dir_path, file)) and os.path.splitext(file)[1] == ".md":
+			logger.INFO(f"FOUND .md file '{file}' at '{content_dir_path}'")
+			generate_page(os.path.join(content_dir_path, file), template_path, os.path.join(dest_dir_path, os.path.splitext(file)[0] + ".html"))
+
+		elif os.path.isdir(os.path.join(content_dir_path, file)):
+			generate_pages_recursive(os.path.join(content_dir_path, file), template_path, os.path.join(dest_dir_path, file))
 
 def main():
 	remove_public()
 	copy_files_from_static()
 
-	generate_page('./content/index.md', './template.html', './public/index.html')
+	generate_pages_recursive('./content', './template.html', './public')
 
 main()
